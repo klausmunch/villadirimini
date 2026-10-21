@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { HOTEL, MOTOR_RESERVAS } from "@/lib/hotel";
-import logoHotel from "@/assets/logo-hotel.png.asset.json";
+import logoHotel from "@/assets/logo-hotel.webp";
 
 const LINKS = [
   { to: "/", label: "Início" },
@@ -21,7 +21,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
         <Link to="/" className="leading-none" onClick={() => setAberto(false)}>
           <img
-            src={logoHotel.url}
+            src={logoHotel}
             alt="Hotel Villa di Rimini"
             className="h-10 w-auto object-contain"
           />

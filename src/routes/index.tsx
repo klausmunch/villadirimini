@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import fachadaHotel from "@/assets/hotel-fachada.jpg";
-import heroVaranda from "@/assets/hero-varanda.jpg.asset.json";
-import heroPost from "@/assets/hero-post.png.asset.json";
-import bannerUbatuba1 from "@/assets/banner-ubatuba-1.png.asset.json";
-import bannerUbatuba2 from "@/assets/banner-ubatuba-2.png.asset.json";
-import bannerUbatuba3 from "@/assets/banner-ubatuba-3.png.asset.json";
-import bannerUbatuba4 from "@/assets/banner-ubatuba-4.png.asset.json";
-import bannerUbatuba5 from "@/assets/banner-ubatuba-5.png.asset.json";
-import bannerUbatuba6 from "@/assets/banner-ubatuba-6.png.asset.json";
+import heroVaranda from "@/assets/hero-varanda.webp";
+import heroPost from "@/assets/hero-post.webp";
+import bannerUbatuba1 from "@/assets/banner-ubatuba-1.webp";
+import bannerUbatuba2 from "@/assets/banner-ubatuba-2.webp";
+import bannerUbatuba3 from "@/assets/banner-ubatuba-3.webp";
+import bannerUbatuba4 from "@/assets/banner-ubatuba-4.webp";
+import bannerUbatuba5 from "@/assets/banner-ubatuba-5.webp";
+import bannerUbatuba6 from "@/assets/banner-ubatuba-6.webp";
 import piscina from "@/assets/piscina.jpg";
 import { COMODIDADES, HOTEL } from "@/lib/hotel";
 import { FotoContato } from "@/components/foto-contato";
@@ -63,12 +63,12 @@ export const Route = createFileRoute("/")({
 });
 
 const BANNER_PADRAO_SLIDES = [
-  { src: bannerUbatuba1.url, alt: "Banner promocional: área externa do hotel com piscina" },
-  { src: bannerUbatuba2.url, alt: "Banner promocional: fachada do Hotel Villa di Rimini" },
-  { src: bannerUbatuba3.url, alt: "Banner promocional: vista da varanda para o mar" },
-  { src: bannerUbatuba4.url, alt: "Banner promocional: praia de Ubatuba vista aérea" },
-  { src: bannerUbatuba5.url, alt: "Banner promocional: costa rochosa e mar de Ubatuba" },
-  { src: bannerUbatuba6.url, alt: "Banner promocional: praia de Ubatuba com coqueiro" },
+  { src: bannerUbatuba1, alt: "Banner promocional: área externa do hotel com piscina" },
+  { src: bannerUbatuba2, alt: "Banner promocional: fachada do Hotel Villa di Rimini" },
+  { src: bannerUbatuba3, alt: "Banner promocional: vista da varanda para o mar" },
+  { src: bannerUbatuba4, alt: "Banner promocional: praia de Ubatuba vista aérea" },
+  { src: bannerUbatuba5, alt: "Banner promocional: costa rochosa e mar de Ubatuba" },
+  { src: bannerUbatuba6, alt: "Banner promocional: praia de Ubatuba com coqueiro" },
 ];
 
 function Home() {
@@ -226,11 +226,11 @@ function Home() {
                 alt: "Fachada do Hotel Villa di Rimini na Avenida do Itaguá, em Ubatuba",
               },
               {
-                src: heroVaranda.url,
+                src: heroVaranda,
                 alt: "Vista da varanda do Hotel Villa di Rimini para a Praia do Itaguá, em Ubatuba",
               },
               {
-                src: heroPost.url,
+                src: heroPost,
                 alt: "Vista aérea da Praia do Itaguá e do Hotel Villa di Rimini em Ubatuba",
               },
             ]}

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import areaExterna from "@/assets/area-externa.jpg.asset.json";
+import areaExterna from "@/assets/area-externa.webp";
 import piscina from "@/assets/piscina.jpg";
 import { GaleriaSecao } from "@/components/gallery";
 import { HOTEL } from "@/lib/hotel";
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/o-hotel")({
 });
 
 const GALERIA_PADRAO = [
-  { src: areaExterna.url, alt: "Área externa com piscina e varanda do Hotel Villa di Rimini" },
+  { src: areaExterna, alt: "Área externa com piscina e varanda do Hotel Villa di Rimini" },
   { src: piscina, alt: "Piscina com vista para o mar" },
 ];
 
