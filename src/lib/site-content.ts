@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fotosPadraoDaSecao, FOTOS_PADRAO, resolverUrlFoto } from "./fotos-padrao";
 import { ACOMODACOES, COMODIDADES } from "./hotel";
+
+/** Tempo máximo de espera pelo banco nas buscas de fotos; depois disso usa as do repositório. */
+const LIMITE_FOTOS_MS = 4000;
 
 export type MarqueeConfig = { itens: string[]; segundos: number };
 
@@ -60,14 +64,33 @@ export function useMarquee() {
   return data ?? MARQUEE_PADRAO;
 }
 
+/** Converte uma linha do banco no formato usado pelo site (url já resolvida). */
+function paraFoto<T extends Foto>(f: T): T {
+  return { ...f, url: resolverUrlFoto(f.url, f.id) };
+}
+
+/** Fotos do repositório no formato de linha do banco, para quando ele não responde. */
+function padraoComoFotos(secao: string): Foto[] {
+  return fotosPadraoDaSecao(secao).map((f) => ({ id: f.id, url: f.src, alt: f.alt, ordem: f.ordem }));
+}
+
 async function buscarFotos(secao: string): Promise<Foto[]> {
-  const { data, error } = await supabase
-    .from("site_fotos")
-    .select("id, url, alt, ordem, chave")
-    .eq("secao", secao)
-    .order("ordem", { ascending: true });
-  if (error || !data) return [];
-  return data as Foto[];
+  const controle = new AbortController();
+  const limite = setTimeout(() => controle.abort(), LIMITE_FOTOS_MS);
+  try {
+    const { data, error } = await supabase
+      .from("site_fotos")
+      .select("id, url, alt, ordem, chave")
+      .eq("secao", secao)
+      .order("ordem", { ascending: true })
+      .abortSignal(controle.signal);
+    if (error || !data) return padraoComoFotos(secao);
+    return (data as Foto[]).map(paraFoto);
+  } catch {
+    return padraoComoFotos(secao);
+  } finally {
+    clearTimeout(limite);
+  }
 }
 
 export function useFotos(secao: string) {
@@ -97,14 +120,29 @@ export const SECAO_QUARTOS_ANTIGA = "quartos";
 
 export type FotoQuarto = Foto & { secao: string };
 
+function quartosPadrao(): FotoQuarto[] {
+  return FOTOS_PADRAO.filter((f) => f.secao.startsWith("quarto-"))
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((f) => ({ id: f.id, url: f.src, alt: f.alt, ordem: f.ordem, secao: f.secao }));
+}
+
 async function buscarFotosQuartos(): Promise<FotoQuarto[]> {
-  const { data, error } = await supabase
-    .from("site_fotos")
-    .select("id, url, alt, ordem, chave, secao")
-    .or(`secao.eq.${SECAO_QUARTOS_ANTIGA},secao.like.quarto-%`)
-    .order("ordem", { ascending: true });
-  if (error || !data) return [];
-  return data as FotoQuarto[];
+  const controle = new AbortController();
+  const limite = setTimeout(() => controle.abort(), LIMITE_FOTOS_MS);
+  try {
+    const { data, error } = await supabase
+      .from("site_fotos")
+      .select("id, url, alt, ordem, chave, secao")
+      .or(`secao.eq.${SECAO_QUARTOS_ANTIGA},secao.like.quarto-%`)
+      .order("ordem", { ascending: true })
+      .abortSignal(controle.signal);
+    if (error || !data) return quartosPadrao();
+    return (data as FotoQuarto[]).map(paraFoto);
+  } catch {
+    return quartosPadrao();
+  } finally {
+    clearTimeout(limite);
+  }
 }
 
 /** Fotos de todos os quartos (formato novo e antigo) numa única busca. */
@@ -133,8 +171,33 @@ export function useFotosQuartos() {
   return useFotosQuartosComEstado().quartos;
 }
 
-/** Reduz a imagem e devolve um JPEG em data URL, pronto para salvar. */
-export function comprimirImagem(file: File, maxLado = 1600, qualidade = 0.82): Promise<string> {
+/** Bucket público do Supabase Storage onde ficam as fotos enviadas pelo painel. */
+export const BUCKET_FOTOS = "fotos";
+
+/**
+ * Reduz a foto, envia ao Storage e devolve a URL pública (é ela que vai para site_fotos.url).
+ * Antes as fotos iam para o banco como texto base64, o que deixava as buscas pesadas.
+ */
+export async function enviarFoto(file: File, secao: string, maxLado = 1600): Promise<string> {
+  const blob = await comprimirImagem(file, maxLado);
+  const caminho = `${secao}/${crypto.randomUUID()}.jpg`;
+  const { error } = await supabase.storage
+    .from(BUCKET_FOTOS)
+    .upload(caminho, blob, { contentType: "image/jpeg", cacheControl: "31536000", upsert: false });
+  if (error) throw error;
+  return supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho).data.publicUrl;
+}
+
+/** Apaga do Storage o arquivo de uma foto enviada pelo painel (ignora as do repositório). */
+export async function removerArquivoFoto(url: string) {
+  const marcador = `/storage/v1/object/public/${BUCKET_FOTOS}/`;
+  const i = url.indexOf(marcador);
+  if (i < 0) return;
+  await supabase.storage.from(BUCKET_FOTOS).remove([decodeURIComponent(url.slice(i + marcador.length))]);
+}
+
+/** Reduz a imagem e devolve um JPEG pronto para enviar. */
+function comprimirImagem(file: File, maxLado = 1600, qualidade = 0.82): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
@@ -149,7 +212,11 @@ export function comprimirImagem(file: File, maxLado = 1600, qualidade = 0.82): P
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject(new Error("Navegador não suportado."));
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", qualidade));
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("Não foi possível converter a foto."))),
+          "image/jpeg",
+          qualidade,
+        );
       };
       img.src = reader.result as string;
     };
@@ -181,7 +248,7 @@ export async function buscarFundoAbertura(): Promise<string | null> {
       .abortSignal(controle.signal)
       .maybeSingle();
     if (error || !data) return null;
-    return data.url;
+    return resolverUrlFoto(data.url) || null;
   } catch {
     return null;
   } finally {

@@ -1,0 +1,29 @@
+# O plano gratuito do Supabase pausa o projeto após 7 dias sem uso (aí login do admin
+# e fotos enviadas pelo painel param). Uma consulta leve por dia evita a pausa.
+name: Manter Supabase ativo
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # todo dia, 06:00 em Brasília
+  workflow_dispatch: # permite rodar manualmente na aba Actions
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .env
+          sparse-checkout-cone-mode: false
+      - name: Consulta leve ao banco
+        run: |
+          set -a; . ./.env; set +a
+          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 \
+            "$SUPABASE_URL/rest/v1/site_config?select=chave&limit=1" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY")
+          echo "Supabase respondeu $status"
+          test "$status" = "200"

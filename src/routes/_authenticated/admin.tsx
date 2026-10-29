@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ehDevAdmin, sairDevAdmin } from "@/lib/dev-admin";
 import {
-  comprimirImagem,
+  enviarFoto,
+  removerArquivoFoto,
   MARQUEE_PADRAO,
   useBannerConfig,
   MAX_FOTOS_QUARTO,
@@ -293,11 +294,14 @@ function GaleriaFotos({
     try {
       let ordem = fotos.length ? Math.max(...fotos.map((f) => f.ordem)) + 1 : 0;
       for (const file of enviar) {
-        const url = await comprimirImagem(file, maxLado);
+        const url = await enviarFoto(file, secao, maxLado);
         const { error } = await supabase
           .from("site_fotos")
           .insert({ secao, url, alt: altPadrao, ordem: ordem++ });
-        if (error) throw error;
+        if (error) {
+          await removerArquivoFoto(url); // não deixa arquivo órfão no Storage
+          throw error;
+        }
       }
       await atualizar();
       setEstado(
@@ -310,7 +314,10 @@ function GaleriaFotos({
   }
 
   async function remover(id: string) {
-    await supabase.from("site_fotos").delete().eq("id", id);
+    const url = fotos.find((f) => f.id === id)?.url;
+    const { error } = await supabase.from("site_fotos").delete().eq("id", id);
+    if (error) return setEstado("Erro ao remover: " + error.message);
+    if (url) await removerArquivoFoto(url);
     await atualizar();
     setEstado("Foto removida.");
   }
