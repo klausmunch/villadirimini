@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { iconeDaCaracteristica } from "@/components/caracteristicas";
 
 type Imagem = { src: string; alt: string };
 
@@ -32,6 +33,7 @@ const QUADRO_FINAL = { transform: "translate(0px, 0px) scale(1)", clipPath: "ins
 export function FotoAmpliada({
   nome,
   imagens,
+  caracteristicas = [],
   inicio,
   origemDe,
   aoMudar,
@@ -39,6 +41,8 @@ export function FotoAmpliada({
 }: {
   nome: string;
   imagens: Imagem[];
+  /** Mostradas acima da foto, uma a uma, enquanto ela abre. */
+  caracteristicas?: string[];
   inicio: number;
   /** Retângulo, na tela, da foto `i` dentro do card (para a animação de ida e volta). */
   origemDe: (i: number) => DOMRect | null;
@@ -49,6 +53,7 @@ export function FotoAmpliada({
   const trilho = useRef<HTMLDivElement>(null);
   const fundo = useRef<HTMLDivElement>(null);
   const controles = useRef<HTMLDivElement>(null);
+  const cabecalho = useRef<HTMLDivElement>(null);
   const janela = useRef<HTMLDivElement>(null);
   const [atual, setAtual] = useState(inicio);
   const [fechando, setFechando] = useState(false);
@@ -62,7 +67,10 @@ export function FotoAmpliada({
     const el = trilho.current;
     if (el) el.scrollLeft = inicio * el.clientWidth;
     const animacoes: (Animation | undefined)[] = [
-      fundo.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: "ease-out" }),
+      fundo.current?.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: 320,
+        easing: "ease-out",
+      }),
       controles.current?.animate([{ opacity: 0 }, { opacity: 1 }], {
         duration: 260,
         delay: DURACAO * 0.6,
@@ -96,10 +104,9 @@ export function FotoAmpliada({
     setFechando(true);
     const img = fotoNoTrilho(atual);
     const origem = origemDe(atual);
-    controles.current?.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: 160,
-      fill: "forwards",
-    });
+    for (const el of [controles.current, cabecalho.current]) {
+      el?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: "forwards" });
+    }
     fundo.current?.animate([{ opacity: 1 }, { opacity: 0 }], {
       duration: DURACAO,
       easing: "ease-in",
@@ -177,6 +184,39 @@ export function FotoAmpliada({
         aria-hidden="true"
       />
 
+      {/* Nome da categoria e características, entrando uma a uma enquanto a foto abre. */}
+      <div
+        ref={cabecalho}
+        className="relative mb-5 flex w-full max-w-xl flex-col items-center px-6 text-center text-white"
+      >
+        <h2
+          className="ampliada-entra font-display text-3xl uppercase leading-none tracking-tight drop-shadow-md sm:text-4xl"
+          style={{ animationDelay: "0.2s" }}
+        >
+          {nome}
+        </h2>
+        {caracteristicas.length > 0 && (
+          <ul
+            className="mt-3 flex flex-wrap justify-center gap-1.5"
+            aria-label="Características do quarto"
+          >
+            {caracteristicas.map((item, i) => {
+              const Icone = iconeDaCaracteristica(item);
+              return (
+                <li
+                  key={item}
+                  className="ampliada-entra inline-flex items-center gap-1.5 bg-white/15 px-2.5 py-1 text-xs text-white backdrop-blur-sm"
+                  style={{ animationDelay: `${0.45 + i * 0.12}s` }}
+                >
+                  <Icone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {item}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
       <div className="relative w-full">
         <div
           ref={trilho}
@@ -192,7 +232,7 @@ export function FotoAmpliada({
                 src={img.src}
                 alt={varias ? `${img.alt} (${i + 1} de ${imagens.length})` : img.alt}
                 draggable={false}
-                className="max-h-[calc(100dvh-9rem)] w-auto max-w-full select-none object-contain shadow-2xl will-change-transform"
+                className={`${caracteristicas.length ? "max-h-[calc(100dvh-17rem)]" : "max-h-[calc(100dvh-13rem)]"} w-auto max-w-full select-none object-contain shadow-2xl will-change-transform`}
               />
             </div>
           ))}

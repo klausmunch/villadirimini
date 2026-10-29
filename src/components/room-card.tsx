@@ -29,7 +29,7 @@ export function RoomCard({
     >
       <div className="relative">
         {imagens.length ? (
-          <FotosQuarto nome={nome} imagens={imagens} />
+          <FotosQuarto nome={nome} imagens={imagens} caracteristicas={caracteristicas} />
         ) : (
           <div className="h-44 w-full bg-black/5" aria-hidden="true" />
         )}
@@ -64,7 +64,15 @@ export function RoomCard({
 }
 
 /** Fotos do quarto lado a lado: deslizar no celular, setas no computador, indicadores embaixo. */
-function FotosQuarto({ nome, imagens }: { nome: string; imagens: Imagem[] }) {
+function FotosQuarto({
+  nome,
+  imagens,
+  caracteristicas,
+}: {
+  nome: string;
+  imagens: Imagem[];
+  caracteristicas: string[];
+}) {
   const trilho = useRef<HTMLDivElement>(null);
   const [atual, setAtual] = useState(0);
   const [ampliada, setAmpliada] = useState<number | null>(null);
@@ -169,6 +177,7 @@ function FotosQuarto({ nome, imagens }: { nome: string; imagens: Imagem[] }) {
         <FotoAmpliada
           nome={nome}
           imagens={imagens}
+          caracteristicas={caracteristicas}
           inicio={ampliada}
           origemDe={origemDe}
           aoMudar={acompanhar}

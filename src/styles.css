@@ -279,3 +279,19 @@
     transform: translateX(250%);
   }
 }
+
+/* Foto ampliada da suíte (src/components/foto-ampliada.tsx): nome e características
+   sobem suavemente, uma a uma (atrasos definidos no componente). */
+@keyframes ampliada-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ampliada-entra {
+  animation: ampliada-entra 0.55s cubic-bezier(0.22, 0.75, 0.2, 1) both;
+}
