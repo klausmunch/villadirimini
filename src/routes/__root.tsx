@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Marquee } from "@/components/marquee";
+import { BotoesFlutuantes } from "@/components/botoes-flutuantes";
 import { TelaAbertura } from "@/components/tela-abertura";
 import { COMODIDADES } from "@/lib/hotel";
 import { buscarFundoAbertura } from "@/lib/site-content";
@@ -139,6 +140,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TelaAbertura fundo={fundoAbertura} />
+      <BotoesFlutuantes />
       <div className="flex min-h-screen flex-col bg-background">
         <div className="sticky top-0 z-40">
           <SiteHeader />

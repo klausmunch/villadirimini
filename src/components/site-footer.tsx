@@ -3,7 +3,7 @@ import { HOTEL } from "@/lib/hotel";
 
 export function SiteFooter() {
   return (
-    <footer className="bg-ink px-5 py-6 text-paper">
+    <footer className="bg-ink px-5 pb-40 pt-6 text-paper md:pb-6">
       <div className="mx-auto max-w-5xl">
         <div className="font-display text-3xl leading-none tracking-tight">VILLA DI RIMINI</div>
         <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-paper/60">
