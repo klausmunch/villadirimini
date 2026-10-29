@@ -190,7 +190,7 @@ export function FotoAmpliada({
         className="relative mb-5 flex w-full max-w-xl flex-col items-center px-6 text-center text-white"
       >
         <h2
-          className="ampliada-entra font-display text-3xl uppercase leading-none tracking-tight drop-shadow-md sm:text-4xl"
+          className="ampliada-entra font-display text-3xl font-medium leading-tight tracking-tight drop-shadow-md sm:text-4xl"
           style={{ animationDelay: "0.2s" }}
         >
           {nome}
@@ -205,7 +205,7 @@ export function FotoAmpliada({
               return (
                 <li
                   key={item}
-                  className="ampliada-entra inline-flex items-center gap-1.5 bg-white/15 px-2.5 py-1 text-xs text-white backdrop-blur-sm"
+                  className="ampliada-entra cantos-redondos inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 font-display text-xs text-white backdrop-blur-sm"
                   style={{ animationDelay: `${0.45 + i * 0.12}s` }}
                 >
                   <Icone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />

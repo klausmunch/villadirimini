@@ -180,6 +180,11 @@
   *::before,
   *::after {
     border-color: var(--color-border);
+  }
+  /* O site usa cantos retos; .cantos-redondos é a exceção (ex.: etiquetas de características). */
+  *:not(.cantos-redondos),
+  *::before,
+  *::after {
     border-radius: 0 !important;
   }
 

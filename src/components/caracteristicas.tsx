@@ -76,7 +76,7 @@ export function ListaCaracteristicas({ itens }: { itens: string[] }) {
         return (
           <li
             key={item}
-            className="inline-flex items-center gap-1.5 bg-paper px-2 py-1 text-xs text-ink-2 outline-1 -outline-offset-1 outline-black/5"
+            className="cantos-redondos inline-flex items-center gap-1.5 rounded-full bg-paper px-2.5 py-1 font-display text-xs text-ink-2 outline-1 -outline-offset-1 outline-black/5"
           >
             <Icone className="h-3.5 w-3.5 shrink-0 text-surf" aria-hidden="true" />
             {item}
