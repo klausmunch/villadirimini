@@ -13,7 +13,7 @@ const SUBTITULO_INICIO = TITULO_INICIO + TITULO.length * TITULO_PASSO * 0.6;
 const SUBTITULO_PASSO = 0.025;
 const FIM_DO_TEXTO = SUBTITULO_INICIO + SUBTITULO.length * SUBTITULO_PASSO + 0.5;
 
-const TEMPO_MAXIMO = 6000; // o botão aparece mesmo que as fotos demorem mais que isso
+const TEMPO_MAXIMO = 4000; // o botão aparece mesmo que as fotos (ou o banco) demorem mais que isso
 const DURACAO_SAIDA = 900; // a tela sobe e revela o site
 
 /** Pré-carrega as imagens; resolve mesmo se alguma falhar. */
@@ -48,11 +48,18 @@ export function TelaAbertura({ fundo }: { fundo: string | null }) {
 
   useEffect(() => setHidratada(true), []);
 
+  // Limite total contado desde a abertura: mesmo que o banco esteja lento ou fora
+  // do ar (e a busca fique tentando de novo), o botão aparece.
+  useEffect(() => {
+    if (ignorar) return;
+    const t = setTimeout(() => setPronta(true), TEMPO_MAXIMO);
+    return () => clearTimeout(t);
+  }, [ignorar]);
+
   useEffect(() => {
     if (ignorar || carregando) return;
     let cancelado = false;
-    const limite = new Promise((r) => setTimeout(r, TEMPO_MAXIMO));
-    Promise.race([preCarregar(primeiras), limite]).then(() => {
+    preCarregar(primeiras).then(() => {
       if (!cancelado) setPronta(true);
     });
     return () => {

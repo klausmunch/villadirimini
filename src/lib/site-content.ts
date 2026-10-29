@@ -164,7 +164,13 @@ export const SECAO_FUNDO_ABERTURA = "abertura";
  * URL da foto de fundo enviada no painel, ou null. Usada no loader da rota raiz:
  * roda no servidor, então a foto já vem no HTML e a abertura não espera por ela.
  */
+const LIMITE_FUNDO_MS = 1500;
+
 export async function buscarFundoAbertura(): Promise<string | null> {
+  // Roda antes de a página ser enviada: se o banco demorar ou estiver fora,
+  // desiste logo e usa o fundo padrão, em vez de travar a página inteira.
+  const controle = new AbortController();
+  const limite = setTimeout(() => controle.abort(), LIMITE_FUNDO_MS);
   try {
     const { data, error } = await supabase
       .from("site_fotos")
@@ -172,10 +178,13 @@ export async function buscarFundoAbertura(): Promise<string | null> {
       .eq("secao", SECAO_FUNDO_ABERTURA)
       .order("ordem", { ascending: true })
       .limit(1)
+      .abortSignal(controle.signal)
       .maybeSingle();
     if (error || !data) return null;
     return data.url;
   } catch {
     return null;
+  } finally {
+    clearTimeout(limite);
   }
 }
