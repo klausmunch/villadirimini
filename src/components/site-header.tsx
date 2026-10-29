@@ -62,7 +62,7 @@ export function SiteHeader() {
       </div>
 
       {aberto && (
-        <nav className="border-t border-paper/20 bg-surf px-5 py-3 md:hidden">
+        <nav className="flex flex-col items-end border-t border-paper/20 bg-surf px-5 py-3 text-right md:hidden">
           {LINKS.map((l) => (
             <Link
               key={l.to}
