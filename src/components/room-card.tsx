@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FotoAmpliada } from "@/components/foto-ampliada";
 import { MOTOR_RESERVAS } from "@/lib/hotel";
 
 type Imagem = { src: string; alt: string };
@@ -62,7 +63,24 @@ export function RoomCard({
 function FotosQuarto({ nome, imagens }: { nome: string; imagens: Imagem[] }) {
   const trilho = useRef<HTMLDivElement>(null);
   const [atual, setAtual] = useState(0);
+  const [ampliada, setAmpliada] = useState<number | null>(null);
   const varias = imagens.length > 1;
+
+  // Retângulo da foto `i` no card: de onde a foto ampliada sai e para onde volta.
+  const origemDe = useCallback((i: number) => {
+    const foto = trilho.current?.children[i] as HTMLElement | undefined;
+    return foto ? foto.getBoundingClientRect() : null;
+  }, []);
+
+  // Com a foto ampliada aberta, o card acompanha por trás (sem animação),
+  // para a volta cair na foto certa.
+  const acompanhar = useCallback((i: number) => {
+    const el = trilho.current;
+    if (el) el.scrollLeft = i * el.clientWidth;
+    setAtual(i);
+  }, []);
+
+  const fechar = useCallback(() => setAmpliada(null), []);
 
   useEffect(() => {
     const el = trilho.current;
@@ -91,14 +109,22 @@ function FotosQuarto({ nome, imagens }: { nome: string; imagens: Imagem[] }) {
         className="flex h-44 snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {imagens.map((img, i) => (
-          <img
+          <button
             key={img.src.slice(-40) + i}
-            src={img.src}
-            alt={varias ? `${img.alt} (${i + 1} de ${imagens.length})` : img.alt}
-            loading="lazy"
-            draggable={false}
-            className="h-44 w-full shrink-0 snap-center object-cover"
-          />
+            type="button"
+            onClick={() => setAmpliada(i)}
+            aria-label={`Ampliar foto ${i + 1} do apartamento ${nome}`}
+            className="h-44 w-full shrink-0 snap-center cursor-zoom-in outline-none [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white"
+          >
+            <img
+              src={img.src}
+              alt={varias ? `${img.alt} (${i + 1} de ${imagens.length})` : img.alt}
+              loading="lazy"
+              draggable={false}
+              // escondida enquanto está ampliada: é ela que "sai" do card
+              className={`h-full w-full object-cover ${ampliada !== null && i === atual ? "invisible" : ""}`}
+            />
+          </button>
         ))}
       </div>
 
@@ -133,6 +159,17 @@ function FotosQuarto({ nome, imagens }: { nome: string; imagens: Imagem[] }) {
             Foto {atual + 1} de {imagens.length}
           </span>
         </>
+      )}
+
+      {ampliada !== null && (
+        <FotoAmpliada
+          nome={nome}
+          imagens={imagens}
+          inicio={ampliada}
+          origemDe={origemDe}
+          aoMudar={acompanhar}
+          aoFechar={fechar}
+        />
       )}
     </div>
   );
