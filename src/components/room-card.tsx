@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ListaCaracteristicas } from "@/components/caracteristicas";
 import { FotoAmpliada } from "@/components/foto-ampliada";
 import { MOTOR_RESERVAS } from "@/lib/hotel";
 
@@ -10,6 +11,7 @@ export function RoomCard({
   descricao,
   imagens,
   etiqueta,
+  caracteristicas = [],
   delay = 0,
 }: {
   nome: string;
@@ -17,6 +19,7 @@ export function RoomCard({
   descricao: string;
   imagens: Imagem[];
   etiqueta?: string | null;
+  caracteristicas?: string[];
   delay?: number;
 }) {
   return (
@@ -54,6 +57,7 @@ export function RoomCard({
           </a>
         </div>
         <p className="mt-3 text-sm leading-snug text-ink-2">{descricao}</p>
+        <ListaCaracteristicas itens={caracteristicas} />
       </div>
     </div>
   );

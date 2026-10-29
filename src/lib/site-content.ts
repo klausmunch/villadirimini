@@ -71,7 +71,12 @@ function paraFoto<T extends Foto>(f: T): T {
 
 /** Fotos do repositório no formato de linha do banco, para quando ele não responde. */
 function padraoComoFotos(secao: string): Foto[] {
-  return fotosPadraoDaSecao(secao).map((f) => ({ id: f.id, url: f.src, alt: f.alt, ordem: f.ordem }));
+  return fotosPadraoDaSecao(secao).map((f) => ({
+    id: f.id,
+    url: f.src,
+    alt: f.alt,
+    ordem: f.ordem,
+  }));
 }
 
 async function buscarFotos(secao: string): Promise<Foto[]> {
@@ -105,6 +110,47 @@ export function useFotosComEstado(secao: string) {
     staleTime: 60_000,
   });
   return { fotos: data ?? SEM_FOTOS, carregando: isPending };
+}
+
+/** Características de cada quarto (ar-condicionado, Wi-Fi...), por slug, em site_config. */
+export const CHAVE_CARACTERISTICAS = "caracteristicas-quartos";
+export type CaracteristicasQuartos = Record<string, string[]>;
+const SEM_CARACTERISTICAS: CaracteristicasQuartos = {};
+
+async function buscarCaracteristicas(): Promise<CaracteristicasQuartos> {
+  const controle = new AbortController();
+  const limite = setTimeout(() => controle.abort(), LIMITE_FOTOS_MS);
+  try {
+    const { data, error } = await supabase
+      .from("site_config")
+      .select("valor")
+      .eq("chave", CHAVE_CARACTERISTICAS)
+      .abortSignal(controle.signal)
+      .maybeSingle();
+    if (error || !data?.valor || typeof data.valor !== "object") return SEM_CARACTERISTICAS;
+    const valor = data.valor as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(valor).map(([slug, itens]) => [
+        slug,
+        Array.isArray(itens)
+          ? itens.filter((t): t is string => typeof t === "string" && !!t.trim())
+          : [],
+      ]),
+    );
+  } catch {
+    return SEM_CARACTERISTICAS;
+  } finally {
+    clearTimeout(limite);
+  }
+}
+
+export function useCaracteristicasQuartos() {
+  const { data } = useQuery({
+    queryKey: ["site_config", CHAVE_CARACTERISTICAS],
+    queryFn: buscarCaracteristicas,
+    staleTime: 60_000,
+  });
+  return data ?? SEM_CARACTERISTICAS;
 }
 
 /** Máximo de fotos por quarto. */
@@ -193,7 +239,9 @@ export async function removerArquivoFoto(url: string) {
   const marcador = `/storage/v1/object/public/${BUCKET_FOTOS}/`;
   const i = url.indexOf(marcador);
   if (i < 0) return;
-  await supabase.storage.from(BUCKET_FOTOS).remove([decodeURIComponent(url.slice(i + marcador.length))]);
+  await supabase.storage
+    .from(BUCKET_FOTOS)
+    .remove([decodeURIComponent(url.slice(i + marcador.length))]);
 }
 
 /** Reduz a imagem e devolve um JPEG pronto para enviar. */
@@ -213,7 +261,8 @@ function comprimirImagem(file: File, maxLado = 1600, qualidade = 0.82): Promise<
         if (!ctx) return reject(new Error("Navegador não suportado."));
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(
-          (blob) => (blob ? resolve(blob) : reject(new Error("Não foi possível converter a foto."))),
+          (blob) =>
+            blob ? resolve(blob) : reject(new Error("Não foi possível converter a foto.")),
           "image/jpeg",
           qualidade,
         );

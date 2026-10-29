@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useFotosQuartos } from "@/lib/site-content";
+import { useCaracteristicasQuartos, useFotosQuartos } from "@/lib/site-content";
 import { RoomCard } from "@/components/room-card";
 import { ReservationForm } from "@/components/reservation-form";
 
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/acomodacoes")({
 
 function Acomodacoes() {
   const quartos = useFotosQuartos();
+  const caracteristicas = useCaracteristicasQuartos();
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="px-1 font-mono text-[10px] uppercase tracking-[0.25em] text-surf">
@@ -41,6 +42,7 @@ function Acomodacoes() {
             descricao={a.descricao}
             imagens={a.imagens}
             etiqueta={a.etiqueta}
+            caracteristicas={caracteristicas[a.slug] ?? []}
             delay={60 + i * 60}
           />
         ))}

@@ -2,17 +2,20 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { iconeDaCaracteristica } from "@/components/caracteristicas";
 import { ehDevAdmin, sairDevAdmin } from "@/lib/dev-admin";
 import {
   enviarFoto,
   removerArquivoFoto,
   MARQUEE_PADRAO,
   useBannerConfig,
+  CHAVE_CARACTERISTICAS,
   MAX_FOTOS_QUARTO,
   SECAO_FUNDO_ABERTURA,
   SECAO_QUARTOS_ANTIGA,
   secaoQuarto,
   useFotos,
+  useCaracteristicasQuartos,
   useFotosQuartosComEstado,
   useMarquee,
 } from "@/lib/site-content";
@@ -214,7 +217,7 @@ function PainelQuartos() {
 
   return (
     <section>
-      <Titulo>Fotos dos quartos</Titulo>
+      <Titulo>Fotos e características dos quartos</Titulo>
       <p className="mt-2 text-sm text-ink-2">
         Até {MAX_FOTOS_QUARTO} fotos por quarto. A primeira aparece de cara; as outras o visitante
         vê deslizando para o lado (ou pelas setas).
@@ -241,12 +244,157 @@ function PainelQuartos() {
               maximo={MAX_FOTOS_QUARTO}
               altPadrao={`Apartamento ${q.nome}`}
             />
+            <EditorCaracteristicas slug={q.slug} nome={q.nome} />
           </div>
         ))}
       </div>
     </section>
   );
 }
+
+const MAX_CARACTERISTICAS = 20;
+
+/** Lista de características de um quarto (ar-condicionado, Wi-Fi...), adicionadas uma a uma. */
+function EditorCaracteristicas({ slug, nome }: { slug: string; nome: string }) {
+  const queryClient = useQueryClient();
+  const todas = useCaracteristicasQuartos();
+  const salvas = todas[slug] ?? SEM_ITENS;
+  const [itens, setItens] = useState<string[]>(salvas);
+  const [novo, setNovo] = useState("");
+  const [estado, setEstado] = useState<string | null>(null);
+  const alterado = itens.join("|") !== salvas.join("|");
+
+  useEffect(() => setItens(salvas), [salvas]);
+
+  function adicionar() {
+    const texto = novo.trim().replace(/\s+/g, " ");
+    if (!texto) return;
+    if (itens.some((i) => i.toLowerCase() === texto.toLowerCase())) {
+      setEstado(`“${texto}” já está na lista.`);
+      return;
+    }
+    if (itens.length >= MAX_CARACTERISTICAS) {
+      setEstado(`Limite de ${MAX_CARACTERISTICAS} características.`);
+      return;
+    }
+    setItens([...itens, texto]);
+    setNovo("");
+    setEstado(null);
+  }
+
+  function mover(i: number, direcao: -1 | 1) {
+    const j = i + direcao;
+    if (j < 0 || j >= itens.length) return;
+    const lista = [...itens];
+    const [item] = lista.splice(i, 1);
+    if (item === undefined) return;
+    lista.splice(j, 0, item);
+    setItens(lista);
+  }
+
+  async function salvar() {
+    setEstado("Salvando...");
+    // parte das características salvas de todos os quartos e troca só as deste
+    const atual =
+      queryClient.getQueryData<Record<string, string[]>>(["site_config", CHAVE_CARACTERISTICAS]) ??
+      {};
+    const { error } = await supabase
+      .from("site_config")
+      .upsert(
+        { chave: CHAVE_CARACTERISTICAS, valor: { ...atual, [slug]: itens } },
+        { onConflict: "chave" },
+      );
+    if (error) return setEstado("Erro ao salvar: " + error.message);
+    await queryClient.invalidateQueries({ queryKey: ["site_config", CHAVE_CARACTERISTICAS] });
+    setEstado("Características salvas!");
+  }
+
+  return (
+    <div className="mt-4 border-t border-line pt-4">
+      <h4 className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-2">
+        Características — {nome}
+      </h4>
+
+      <ul className="mt-3 space-y-2">
+        {itens.map((item, i) => {
+          const Icone = iconeDaCaracteristica(item);
+          return (
+            <li
+              key={item}
+              className="flex items-center gap-2 border border-line bg-paper-2 px-3 py-2"
+            >
+              <Icone className="h-4 w-4 shrink-0 text-surf" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate text-sm text-ink">{item}</span>
+              <button
+                type="button"
+                disabled={i === 0}
+                onClick={() => mover(i, -1)}
+                aria-label={`Subir ${item}`}
+                className="px-1 text-ink-2 disabled:opacity-30"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                disabled={i === itens.length - 1}
+                onClick={() => mover(i, 1)}
+                aria-label={`Descer ${item}`}
+                className="px-1 text-ink-2 disabled:opacity-30"
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                onClick={() => setItens(itens.filter((_, k) => k !== i))}
+                aria-label={`Remover ${item}`}
+                className="px-1 text-surf"
+              >
+                ✕
+              </button>
+            </li>
+          );
+        })}
+        {!itens.length && <li className="text-sm text-ink-2">Nenhuma característica ainda.</li>}
+      </ul>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          adicionar();
+        }}
+        className="mt-3 flex gap-2"
+      >
+        <input
+          value={novo}
+          onChange={(e) => setNovo(e.target.value)}
+          maxLength={40}
+          placeholder="Ex.: Ar-condicionado"
+          aria-label={`Nova característica para ${nome}`}
+          className="min-w-0 flex-1 border border-line bg-paper-2 px-3 py-2 text-sm text-ink outline-none"
+        />
+        <button type="submit" className="border border-ink px-3 text-sm font-semibold text-ink">
+          + Adicionar
+        </button>
+      </form>
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={salvar}
+          disabled={!alterado}
+          className="bg-ink px-4 py-2.5 text-sm font-semibold text-paper disabled:opacity-40"
+        >
+          Salvar características
+        </button>
+        {alterado && !estado && <span className="text-xs text-ink-2">Alterações não salvas</span>}
+        {estado && <span className="text-sm text-ink-2">{estado}</span>}
+      </div>
+    </div>
+  );
+}
+
+// Referência estável para quartos sem características (evita loop no useEffect acima).
+const SEM_ITENS: string[] = [];
 
 function GaleriaFotos({
   secao,
